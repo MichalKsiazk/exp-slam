@@ -1,0 +1,3 @@
+yellow -> black -> analog
+black -> white -> GND
+red -> gray -> 5V
