@@ -2,13 +2,16 @@ import serial as sp
 import time
 import io
 import keyboard
+from renderer import Renderer
 from os import system
 from enum import Enum
 
-tp = sp.Serial('/dev/ttyACM0', 9600)
+tp = sp.Serial('/dev/ttyACM0', 9600, timeout = 0.1)
 
 valid_c1 = ['movc', 'stop', 'mova']
 valid_c2 = ['del']
+
+r = Renderer(500, 500) 
 
 class Mode(Enum):
     CMD_MODE = 1;
@@ -26,6 +29,7 @@ def is_int(s):
 def get_input():
     print("enter radar command:")
     user_input = input()
+    user_input = user_input.replace("\x1bf", "")
     input_arr = user_input.split()
     
     print(input_arr)
@@ -44,8 +48,14 @@ def validate_cmd(cmd):
         return False
 
     # quick stop
-    if(len(cmd) == 1 and cmd[0] == "stop"):
+    if(len(cmd) == 1 and (cmd[0] == "stop" or cmd[0] == "clear")):
         return True
+
+   	# change color
+    if(cmd[0] == "setc"):
+        r.set_color(int(cmd[1]), int(cmd[2]), int(cmd[3]))
+        print("color changed")
+        return False
 
     # valid first cmd
     if not(cmd[0] in valid_c1):
@@ -87,6 +97,11 @@ def set_cmd_mode():
     
 keyboard.add_hotkey('alt+f', set_cmd_mode)
 
+
+#for i in range(0, 2038):
+#    r.draw_point(10, i, 4)
+
+#r.flip()
 while 1:
     if PROGRAM_MODE == Mode.CMD_MODE:
         print(" ")
@@ -94,6 +109,8 @@ while 1:
 
         if(command[0] == "help"):
             print_help()
+        if(command[0] == "clear"):
+            r.clear()
 
         if(command[0] == "free"):
             PROGRAM_MODE = Mode.FREE_MODE
@@ -101,6 +118,13 @@ while 1:
             send_cmd(command)
             time.sleep(0.1)
             print(" ")
+            PROGRAM_MODE = Mode.FREE_MODE
+    elif PROGRAM_MODE == Mode.FREE_MODE:
+        serial_input = tp.readline().decode("utf-8")
+        if serial_input:
+            splited_input = serial_input.split()
+            r.draw_point(float(splited_input[1]), float(splited_input[0]), 8)
+            print(serial_input)
 
       
 

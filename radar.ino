@@ -5,6 +5,8 @@
 
 #define STOP 0
 
+#define WRITE_DST 1
+
 /*
  * STEP MOTOR 28YJ-48
  * STEP DRIVER ZC-A0591
@@ -36,6 +38,7 @@ void do_scheduled_cmd();
 void receive_cmd(command* target_cmd);
 
 command scheduled_cmd;
+int32_t step_cnt = 0;
 
 void setup()
 {
@@ -50,11 +53,7 @@ void loop()
 {
     if (Serial.available() > 0) 
     {
-        receive_cmd(&scheduled_cmd);
-  
-    //float volts = analogRead(A0)*0.0048828125;
-    //float distance = 13*pow(volts, -1);
-    //Serial.println(distance);
+        receive_cmd(&scheduled_cmd);  
     }
     do_scheduled_cmd();
 }
@@ -89,7 +88,6 @@ void receive_cmd(command* target_cmd)
     uint32_t _delay_ms = input.substring(dels[3] + 1, input.length()-1).toInt();
     scheduled_cmd.steps = _steps;
     scheduled_cmd.speed_ms = _delay_ms;
-    Serial.println("rec: " + input.substring(dels[3] + 1, input.length()-1)); 
 }
 
 void do_scheduled_cmd()
@@ -98,7 +96,18 @@ void do_scheduled_cmd()
     {
         step(scheduled_cmd.dir, scheduled_cmd.speed_ms);
         scheduled_cmd.steps--;
+
+    
+    #if WRITE_DST == 1
+        float volts = analogRead(A0)*0.0048828125;
+        float distance = 13*pow(volts, -1);
+        Serial.print(step_cnt);
+        Serial.print(" ");
+        Serial.println(distance);
+    #endif
+
     }
+
 }
 
 void step(int8_t dir, uint16_t delay_mili)
@@ -107,7 +116,9 @@ void step(int8_t dir, uint16_t delay_mili)
 	cmd_counter = cmd_counter > 4 ? 1 : cmd_counter;
 	cmd_counter = cmd_counter < 1 ? 4 : cmd_counter;
 	
-	
+    step_cnt += dir;	
+
+
 	uint8_t cmd = 0x10 >> cmd_counter;
 	
 	digitalWrite(IN1, (cmd >> 3) & 0x01); 
