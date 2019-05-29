@@ -3,8 +3,6 @@
 #define IN3  	10
 #define IN4  	11
 
-#define STOP 0
-
 #define WRITE_DST 1
 
 /*
@@ -19,23 +17,22 @@ enum direction
     A_CLOCKWISE = -1
 };
 
-enum task_status
-{
-    IN_PROGRESS,
-    DONE
-};
 
 struct command
 {
     uint32_t steps;
     direction dir;
     uint32_t speed_ms;
+    bool done;
 };
 
 
 void step(int8_t dir, uint16_t delay_mili);
 void do_scheduled_cmd();
-void receive_cmd(command* target_cmd);
+void receive_cmd_s(command* target_cmd);
+void send_data(char op1, float v1, char op2, float v2);
+
+float sensor_dst();
 
 command scheduled_cmd;
 int32_t step_cnt = 0;
@@ -47,25 +44,25 @@ void setup()
 	pinMode(IN2, OUTPUT); 
 	pinMode(IN3, OUTPUT); 
 	pinMode(IN4, OUTPUT); 
-    scheduled_cmd = {0, A_CLOCKWISE, 0};
+    scheduled_cmd = {0, A_CLOCKWISE, 0, true};
 }
 void loop()
 {
     if (Serial.available() > 0) 
     {
-        receive_cmd(&scheduled_cmd);  
+        receive_cmd_s(&scheduled_cmd);  
     }
     do_scheduled_cmd();
 }
 
-void receive_cmd(command* target_cmd)
+void receive_cmd_s(command* target_cmd)
 {
    
 
     String input = Serial.readString();
     if(input == "stop")
     {
-        scheduled_cmd = {0, CLOCKWISE, 0};
+        *target_cmd = {0, CLOCKWISE, 0, true};
         return;
     }
     int dels[4];
@@ -78,16 +75,18 @@ void receive_cmd(command* target_cmd)
 
     if(c1 == "movc")
     {
-        scheduled_cmd.dir = CLOCKWISE;
+        target_cmd->dir = CLOCKWISE;
     } 
     else if(c1 == "mova")
     {   
-        scheduled_cmd.dir = A_CLOCKWISE;
+        target_cmd->dir = A_CLOCKWISE;
     } 
-    uint32_t _steps = input.substring(dels[1] + 1, dels[2]).toInt();
-    uint32_t _delay_ms = input.substring(dels[3] + 1, input.length()-1).toInt();
-    scheduled_cmd.steps = _steps;
-    scheduled_cmd.speed_ms = _delay_ms;
+    target_cmd->steps = input.substring(dels[1] + 1, dels[2]).toInt();
+    target_cmd->speed_ms = input.substring(dels[3] + 1, input.length()-1).toInt();
+    if(target_cmd->steps > 0)
+    {
+        target_cmd->done = false;
+    }
 }
 
 void do_scheduled_cmd()
@@ -97,17 +96,38 @@ void do_scheduled_cmd()
         step(scheduled_cmd.dir, scheduled_cmd.speed_ms);
         scheduled_cmd.steps--;
 
-    
-    #if WRITE_DST == 1
-        float volts = analogRead(A0)*0.0048828125;
-        float distance = 13*pow(volts, -1);
-        Serial.print(step_cnt);
-        Serial.print(" ");
-        Serial.println(distance);
-    #endif
-
+        #if WRITE_DST == 1
+        send_data('s', step_cnt, 'd', sensor_dst());       
+        #endif
+    }
+    else
+    {
+        if(!scheduled_cmd.done)
+        {
+            scheduled_cmd.done = true;
+            send_data('e', 0, 0, 0);
+            
+        }
     }
 
+}
+
+void send_data(char op1, float v1, char op2, float v2)
+{
+    Serial.print(op1);
+    Serial.print(" ");
+    Serial.print(v1);
+    Serial.print(" ");
+    Serial.print(op2);
+    Serial.print(" ");
+    Serial.println(v2);
+}
+
+float sensor_dst()
+{
+    float volts = analogRead(A0) * 0.0048828125;
+    float distance = 13 * pow(volts, -1);
+    return distance;
 }
 
 void step(int8_t dir, uint16_t delay_mili)

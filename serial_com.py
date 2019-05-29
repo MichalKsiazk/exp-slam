@@ -31,8 +31,6 @@ def get_input():
     user_input = input()
     user_input = user_input.replace("\x1bf", "")
     input_arr = user_input.split()
-    
-    print(input_arr)
     return input_arr
 
 def print_help():
@@ -51,7 +49,7 @@ def validate_cmd(cmd):
     if(len(cmd) == 1 and (cmd[0] == "stop" or cmd[0] == "clear")):
         return True
 
-   	# change color
+    #set color
     if(cmd[0] == "setc"):
         r.set_color(int(cmd[1]), int(cmd[2]), int(cmd[3]))
         print("color changed")
@@ -123,8 +121,11 @@ while 1:
         serial_input = tp.readline().decode("utf-8")
         if serial_input:
             splited_input = serial_input.split()
-            r.draw_point(float(splited_input[1]), float(splited_input[0]), 8)
+            if splited_input[0] == 's':
+                r.draw_point(float(splited_input[3]), float(splited_input[1]), 8)
             print(serial_input)
+            if splited_input[0] == 'e':
+                send_cmd(["movc", "10", "del", "100"])
 
       
 
