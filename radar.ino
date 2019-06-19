@@ -1,13 +1,13 @@
-#define IN1  	8
-#define IN2 	9
-#define IN3  	10
-#define IN4  	11
+#define OUT1  	8
+#define OUT2 	9
+#define OUT3  	10
+#define OUT4  	11
 
 #define WRITE_DST 1
 
 /*
- * STEP MOTOR 28YJ-48
- * STEP DRIVER ZC-A0591
+ * STEPPER MOTOR 28YJ-48
+ * STEPPER DRIVER ZC-A0591
  * SENSOR SHARP 0A41SK F 3Z
  */
 
@@ -31,7 +31,7 @@ void step(int8_t dir, uint16_t delay_mili);
 void do_scheduled_cmd();
 void receive_cmd_s(command* target_cmd);
 void send_data(char op1, float v1, char op2, float v2);
-
+//TODO: receive_cmd_c()
 float sensor_dst();
 
 command scheduled_cmd;
@@ -40,10 +40,10 @@ int32_t step_cnt = 0;
 void setup()
 {
 	Serial.begin(9600); 
-	pinMode(IN1, OUTPUT); 
-	pinMode(IN2, OUTPUT); 
-	pinMode(IN3, OUTPUT); 
-	pinMode(IN4, OUTPUT); 
+	pinMode(OUT1, OUTPUT); 
+	pinMode(OUT2, OUTPUT); 
+	pinMode(OUT3, OUTPUT); 
+	pinMode(OUT4, OUTPUT); 
     scheduled_cmd = {0, A_CLOCKWISE, 0, true};
 }
 void loop()
@@ -141,10 +141,10 @@ void step(int8_t dir, uint16_t delay_mili)
 
 	uint8_t cmd = 0x10 >> cmd_counter;
 	
-	digitalWrite(IN1, (cmd >> 3) & 0x01); 
-	digitalWrite(IN2, (cmd >> 2) & 0x01);
-	digitalWrite(IN3, (cmd >> 1) & 0x01);
-	digitalWrite(IN4, cmd & 0x01);
+	digitalWrite(OUT1, (cmd >> 3) & 0x01); 
+	digitalWrite(OUT2, (cmd >> 2) & 0x01);
+	digitalWrite(OUT3, (cmd >> 1) & 0x01);
+	digitalWrite(OUT4, cmd & 0x01);
 	cmd_counter += dir;
 	delay(delay_mili);
 }
