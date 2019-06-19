@@ -2,6 +2,7 @@ import serial as sp
 import time
 import io
 import keyboard
+import helper
 from renderer import Renderer
 from os import system
 from enum import Enum
@@ -106,7 +107,7 @@ while 1:
         command = get_input()
 
         if(command[0] == "help"):
-            print_help()
+            helper.print_help()
         if(command[0] == "clear"):
             r.clear()
 
